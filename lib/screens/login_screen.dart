@@ -1,11 +1,31 @@
+import 'package:conditional_builder/conditional_builder.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flash_chat/screens/chat_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+
+import '../constants.dart';
 
 class LoginScreen extends StatefulWidget {
+  static String id = 'LoginScreen';
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  String email;
+  String password;
+  bool isPassword = true;
+  bool isLoading = false;
+  final _auth = FirebaseAuth.instance;
+
+  void deposit(){
+    super.dispose();
+    email = password = null;
+    isLoading = false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -16,61 +36,36 @@ class _LoginScreenState extends State<LoginScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Container(
-              height: 200.0,
-              child: Image.asset('images/logo.png'),
+            Hero(
+              tag: 'logo',
+              child: Container(
+                height: 200.0,
+                child: Image.asset('images/logo.png'),
+              ),
             ),
             SizedBox(
               height: 48.0,
             ),
             TextField(
+              keyboardType: TextInputType.emailAddress,
+              style: TextStyle(fontSize: 16.0, color: Colors.black),
               onChanged: (value) {
                 //Do something with the user input.
+                email = value;
               },
-              decoration: InputDecoration(
-                hintText: 'Enter your email',
-                contentPadding:
-                    EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(32.0)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderSide:
-                      BorderSide(color: Colors.lightBlueAccent, width: 1.0),
-                  borderRadius: BorderRadius.all(Radius.circular(32.0)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide:
-                      BorderSide(color: Colors.lightBlueAccent, width: 2.0),
-                  borderRadius: BorderRadius.all(Radius.circular(32.0)),
-                ),
-              ),
+              decoration: kEmailInputDecoration,
             ),
             SizedBox(
               height: 8.0,
             ),
             TextField(
+              obscureText: isPassword,
+              style: TextStyle(fontSize: 17.0, color: Colors.black),
               onChanged: (value) {
                 //Do something with the user input.
+                password = value;
               },
-              decoration: InputDecoration(
-                hintText: 'Enter your password.',
-                contentPadding:
-                    EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(32.0)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderSide:
-                      BorderSide(color: Colors.lightBlueAccent, width: 1.0),
-                  borderRadius: BorderRadius.all(Radius.circular(32.0)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide:
-                      BorderSide(color: Colors.lightBlueAccent, width: 2.0),
-                  borderRadius: BorderRadius.all(Radius.circular(32.0)),
-                ),
-              ),
+              decoration: KPasswordInputDecoration,
             ),
             SizedBox(
               height: 24.0,
@@ -82,13 +77,36 @@ class _LoginScreenState extends State<LoginScreen> {
                 borderRadius: BorderRadius.all(Radius.circular(30.0)),
                 elevation: 5.0,
                 child: MaterialButton(
-                  onPressed: () {
+                  onPressed: () async {
+                    setState(() {
+                      isLoading = true;
+                    });
                     //Implement login functionality.
+                    final user = await _auth.signInWithEmailAndPassword(
+                        email: email, password: password);
+                    try {
+                      if (user != null){
+                        setState(() {
+                          isLoading = false;
+                        });
+                        Navigator.pushNamed(context, ChatScreen.id);
+                      }
+
+                    } catch (ex) {
+                      Fluttertoast.showToast(
+                          msg: ex.toString(),
+                          gravity: ToastGravity.BOTTOM,
+                          backgroundColor: Colors.red);
+                    }
                   },
                   minWidth: 200.0,
                   height: 42.0,
-                  child: Text(
-                    'Log In',
+                  child: ConditionalBuilder(
+                    condition: !isLoading,
+                    builder: (context) =>  Text(
+                      'Log In',
+                    ),
+                    fallback: (context) => Center(child: CircularProgressIndicator(backgroundColor: Colors.white,)),
                   ),
                 ),
               ),
